@@ -7,11 +7,17 @@
 import processing.serial.*;
 import java.nio.ByteBuffer;
 
+boolean drawTree = true;
+int maxTreeSteps;
+float branchAngle;
+float treeLength;
+color background;
+float temp;
 Serial myport;
 
 
 
-float[] notMove;
+float notMove = 4.80;
 
 
 void setup()
@@ -19,36 +25,49 @@ void setup()
   /**
   * read data from file.
   **/ 
-  notMove = String2Float("NotMove.txt", notMove);
+  size(1024,768);
   myport = new Serial(this, Serial.list()[0], 9600);
-  
+  background = #050505;
+  maxTreeSteps = 20;
+  branchAngle = 30;
+  treeLength = 50;
+  temp = treeLength;
 }
 
-float[] data = new float[51];
+float[] data = new float[21];
 float f;
 int index = 0;
-void draw()
-{
 
-  float num;
-  
+void draw()
+{ 
   if(myport.available() > 0)
   {
     String inString = myport.readStringUntil((int)'\n');
-    if(inString != null && inString.length() > 0)
-    {
-      f = decodeFloat(inString.substring(0,10));
-      if((index % 51) < 50 )
-        data[(index++ % 50)] = f;
-      else{
-        ++index;
-        Todo(data);
-      }
+    
+    if(inString != null && inString.length() > 0){
       
+      f = decodeFloat(inString.substring(0,10));
+      println(f);
+      if(f > 11.0 && treeLength < 200)
+        treeLength += 10;
+       else{
+          if(treeLength >= 200){
+            delay(2000);
+            treeLength = 50;
+            }
+       }
     }
+    
+  noFill();
+  background(background);   
+  
+  if (drawTree){
+    translate(width / 2, height);
+    tree(treeLength, treeLength * 0.4, 1);      
   }
    myport.clear();
 }  
+}
 
 float decodeFloat(String inString)
 {
@@ -74,45 +93,57 @@ float[] String2Float(String fileName, float[] dest)
   return dest;
 }
 
-///<summary> Decide the case we will enter</summary>
-///<para name = "input">the input data from Aduino</para name>
 
-void Todo(float[] input)
-{
-  float sum = 0,  avg;
-  
-  int len = getTheMinLen();
-  if(len > 50)
-    len = 50;
-   
-  for(int i = 0; i < len; ++i)
-    sum += abs(input[i] - notMove[i]);
-  avg = sum / len;
- 
-  
-  if(avg >= 0 && avg <= 1)
-  {
-    println("Not move");
-    println(avg);  
-  }
-  
-  if(1 <avg && avg < 2.5)
-  {
-    println("Light");
-    println(avg);
-  }
-  
-  if(2.5 < avg && avg < 4.4)
-  {
-    println("Middle");
-    println(avg);
-  }
+void Check(){
+  treeLength -= 2;
 }
 
+///
+/// <summary>the main body of drawing a tree</summary>
+/// <para name = "treeLength"> the length of the tree</para name>
+/// <para name = "strokeWeight"></para name>
+/// <para name = "currentTreeStep">the step will run</para name>
+///
 
-int getTheMinLen()
-{
- int Min = notMove.length;
-  return Min;
+void tree(float treeLength, float strokeWeight, int currentTreeStep) {
+  
+  //{*
+  
+    /*
+    * <summary>to set the color of the branch and leaves</summary>
+    */
+  if (currentTreeStep < maxTreeSteps) {
+    
+    if(currentTreeStep >= 8 && currentTreeStep <=10)
+      stroke(#558351); //set color light green
+     else{
+      if(currentTreeStep >10 && currentTreeStep <=20)
+          stroke(#199B0E); //set hard green
+        
+      else{
+      stroke(#311919);//set branch color
+    }
+     }
+    
+  //*}
+    strokeCap(PROJECT);
+    strokeWeight(strokeWeight);
+    line(0, 0, 0, -treeLength);  
+    translate(0, -treeLength);
+    
+    strokeWeight *= 0.5;
+    treeLength *= 0.75;
+    
+    if (treeLength > 1) {
+      pushMatrix();
+      rotate(radians(branchAngle));
+      tree(treeLength, strokeWeight, currentTreeStep + 1);
+      popMatrix();
+      
+      pushMatrix();
+      rotate(-radians(branchAngle));
+      tree(treeLength, strokeWeight, currentTreeStep + 1);
+      popMatrix();
+    } 
+  }
 }
-
